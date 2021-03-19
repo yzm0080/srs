@@ -162,14 +162,9 @@ srs_error_t SrsHybridServer::initialize()
 {
     srs_error_t err = srs_success;
 
-    // Consume the async cooked SRTP packets.
-    if ((err = _srs_async_srtp->consume()) != srs_success) {
+    // Consume the async UDP/SRTP packets.
+    if ((err = _srs_thread_pool->consume()) != srs_success) {
         return srs_error_wrap(err, "srtp");
-    }
-
-    // Consume the async received UDP packets.
-    if ((err = _srs_async_recv->consume()) != srs_success) {
-        return srs_error_wrap(err, "recv");
     }
 
     if ((err = setup_ticks()) != srs_success) {
