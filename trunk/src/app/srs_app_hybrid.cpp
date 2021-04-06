@@ -142,6 +142,7 @@ ISrsHybridServer::~ISrsHybridServer()
 SrsHybridServer::SrsHybridServer()
 {
     timer_ = NULL;
+    stream_index_ = -1;
 }
 
 SrsHybridServer::~SrsHybridServer()
@@ -480,5 +481,5 @@ srs_error_t SrsHybridServer::on_thread_message(SrsThreadMessage* msg, SrsThreadP
     return err;
 }
 
-SrsHybridServer* _srs_hybrid = new SrsHybridServer();
+ __thread SrsHybridServer* _srs_hybrid = NULL;
 
