@@ -5,84 +5,51 @@
 [![](https://codecov.io/gh/ossrs/srs/branch/4.0release/graph/badge.svg)](https://codecov.io/gh/ossrs/srs/branch/4.0release)
 [![](https://cloud.githubusercontent.com/assets/2777660/22814959/c51cbe72-ef92-11e6-81cc-32b657b285d5.png)](https://github.com/ossrs/srs/wiki/v1_CN_Contact#wechat)
 
-SRS/4.0，[Leo][release4]，是一个简单高效的实时视频服务器，支持RTMP/WebRTC/HLS/HTTP-FLV/SRT/GB28181/RTSP。
+SRS/4.0，[Leo][release4]，是一个简单高效的实时视频服务器，支持RTMP/WebRTC/HLS/HTTP-FLV/SRT/GB28181。
 
-SRS is a simple, high efficiency and realtime video server, supports RTMP/WebRTC/HLS/HTTP-FLV/SRT/GB28181/RTSP.
+SRS is a simple, high efficiency and realtime video server, supports RTMP/WebRTC/HLS/HTTP-FLV/SRT/GB28181.
 
 > Remark: Although SRS is licenced under [MIT][LICENSE], but there are some depended libraries which are distributed using their own licenses, please read [License Mixing][LicenseMixing].
 
 <a name="product"></a>
 ## Usage
 
-Recommend to run SRS by [docker][docker-srs4]:
+Recommend running SRS by [docker][docker-srs4], images is [here](https://hub.docker.com/r/ossrs/srs/tags) or [there](https://cr.console.aliyun.com/repository/cn-hangzhou/ossrs/srs/images):
 
 ```bash
 docker run --rm -p 1935:1935 -p 1985:1985 -p 8080:8080 \
-    ossrs/srs:v4.0.76
-
-# Or, for developers in China to speedup.
-docker run --rm -p 1935:1935 -p 1985:1985 -p 8080:8080 \
-    registry.cn-hangzhou.aliyuncs.com/ossrs/srs:v4.0.76
-
-# For macOS to enable WebRTC, other OS please see #307.
-docker run --rm -p 1935:1935 -p 1985:1985 -p 8080:8080 \
     --env CANDIDATE=$(ifconfig en0 inet| grep 'inet '|awk '{print $2}') -p 8000:8000/udp \
-    registry.cn-hangzhou.aliyuncs.com/ossrs/srs:v4.0.76
+    ossrs/srs:v4.0.85
 ```
-
-> Note: All [tags](https://github.com/ossrs/srs/tags) are available, such as 
-> `ossrs/srs:v3.0-r3` for tag [v3.0-r3](https://github.com/ossrs/srs/releases/tag/v3.0-r3), 
-> please check at [here](https://cr.console.aliyun.com/repository/cn-hangzhou/ossrs/srs/images) 
-> or [there](https://hub.docker.com/r/ossrs/srs/tags).
 
 > To enable WebRTC, user MUST set the env `CANDIDATE`, see [#307](https://github.com/ossrs/srs/issues/307#issue-76908382).
 
-If it works, open [http://localhost:8080/](http://localhost:8080/) to check it, then publish 
+Open [http://localhost:8080/](http://localhost:8080/) to check it, then publish 
 [stream](https://github.com/ossrs/srs/blob/3.0release/trunk/doc/source.200kbps.768x320.flv) by:
 
 ```bash
-ffmpeg -re -i doc/source.200kbps.768x320.flv -c copy \
-    -f flv rtmp://localhost/live/livestream
-
-# Or by FFmpeg docker
-docker run --rm --network=host registry.cn-hangzhou.aliyuncs.com/ossrs/srs:encoder \
-  ffmpeg -re -i ./doc/source.200kbps.768x320.flv -c copy \
-      -f flv -y rtmp://localhost/live/livestream
+docker run --rm --network=host ossrs/srs:encoder ffmpeg -re -i ./doc/source.200kbps.768x320.flv \
+  -c copy -f flv -y rtmp://localhost/live/livestream
 ```
-
 > Note: If WebRTC enabled, you can publish by [H5](http://localhost:8080/players/rtc_publisher.html?autostart=true).
 
-Play the following streams by players:
+Play the following streams by [players](https://ossrs.net):
 
 * VLC(RTMP): rtmp://localhost/live/livestream
 * H5(HTTP-FLV): [http://localhost:8080/live/livestream.flv](http://localhost:8080/players/srs_player.html?autostart=true&stream=livestream.flv&port=8080&schema=http)
 * H5(HLS): [http://localhost:8080/live/livestream.m3u8](http://localhost:8080/players/srs_player.html?autostart=true&stream=livestream.m3u8&port=8080&schema=http)
 * H5(WebRTC): [webrtc://localhost/live/livestream](http://localhost:8080/players/rtc_player.html?autostart=true)
 
-> The online demos and players are available on [ossrs.net](https://ossrs.net).
-
-Strongly recommend reading bellow wikis:
-
-* How to deliver RTMP streaming?([CN][v1_CN_SampleRTMP], [EN][v1_EN_SampleRTMP])
-* How to build RTMP Edge-Cluster?([CN][v3_CN_SampleRTMPCluster], [EN][v3_EN_SampleRTMPCluster])
-* How to build RTMP Origin-Cluster?([CN][v3_CN_SampleOriginCluster], [EN][v3_EN_SampleOriginCluster])
-* How to deliver HTTP-FLV streaming?([CN][v3_CN_SampleHttpFlv], [EN][v3_EN_SampleHttpFlv])
-* How to deliver HLS streaming?([CN][v3_CN_SampleHLS], [EN][v3_EN_SampleHLS])
-* How to deliver low-latency streaming?([CN][v3_CN_SampleRealtime], [EN][v3_EN_SampleRealtime])
-* Usage: How to play WebRTC from SRS? [#307](https://github.com/ossrs/srs/issues/307)
-* Usage: How to publish WebRTC to SRS? [#307](https://github.com/ossrs/srs/issues/307)
-
 It's also very easy to build from source:
 
 **>>> Step 1:** Get SRS.
 
 ```
-git clone https://gitee.com/winlinvip/srs.oschina.git srs &&
-cd srs/trunk && git remote set-url origin https://github.com/ossrs/srs.git && 
-git checkout 4.0release && git pull
+git clone -b 4.0release https://gitee.com/winlinvip/srs.oschina.git srs &&
+cd srs/trunk && git remote set-url origin https://github.com/ossrs/srs.git
 ```
 
-> Note: We use [mirrors(gitee)](#mirrors) here, but it's also ok to directly clone by `git clone https://github.com/ossrs/srs.git && cd srs/trunk`
+> Note: We use [mirrors(gitee)](#mirrors) here, but it's also ok to `git clone https://github.com/ossrs/srs.git`
 
 **>>> Step 2:** Build SRS.
 
@@ -99,6 +66,17 @@ git checkout 4.0release && git pull
 ```
 ./objs/srs -c conf/srs.conf
 ```
+
+Strongly recommend reading bellow wikis:
+
+* How to deliver RTMP streaming?([CN][v1_CN_SampleRTMP], [EN][v1_EN_SampleRTMP])
+* How to build RTMP Edge-Cluster?([CN][v3_CN_SampleRTMPCluster], [EN][v3_EN_SampleRTMPCluster])
+* How to build RTMP Origin-Cluster?([CN][v3_CN_SampleOriginCluster], [EN][v3_EN_SampleOriginCluster])
+* How to deliver HTTP-FLV streaming?([CN][v3_CN_SampleHttpFlv], [EN][v3_EN_SampleHttpFlv])
+* How to deliver HLS streaming?([CN][v3_CN_SampleHLS], [EN][v3_EN_SampleHLS])
+* How to deliver low-latency streaming?([CN][v3_CN_SampleRealtime], [EN][v3_EN_SampleRealtime])
+* Usage: How to play WebRTC from SRS? [#307](https://github.com/ossrs/srs/issues/307)
+* Usage: How to publish WebRTC to SRS? [#307](https://github.com/ossrs/srs/issues/307)
 
 <a name="srs-30-wiki"></a>
 <a name="wiki"></a>
@@ -166,10 +144,10 @@ Other documents:
 - [x] [Experimental] Support DVR in MP4 format, read [#738][bug #738].
 - [x] [Experimental] Support MPEG-DASH, the future live streaming protocol, read [#299][bug #299].
 - [x] [Experimental] Support pushing MPEG-TS over UDP, please read [bug #250][bug #250].
-- [x] [Experimental] Support pushing RTSP, please read [bug #133][bug #133].
 - [x] [Experimental] Support pushing FLV over HTTP POST, please read wiki([CN][v2_CN_Streamer2], [EN][v2_EN_Streamer2]).
 - [x] [Experimental] Support HTTP RAW API, please read [#459][bug #459], [#470][bug #470], [#319][bug #319].
 - [x] [Experimental] Support SRT server, read [#1147][bug #1147].
+- [x] [Deprecated] Support pushing RTSP, please read [bug #133][bug #133].
 - [x] [Deprecated] Support RTMP client library: srs-librtmp([CN][v3_CN_SrsLibrtmp], [EN][v3_EN_SrsLibrtmp])
 - [x] [Deprecated] Support Adobe HDS(f4m), please read wiki([CN][v2_CN_DeliveryHDS], [EN][v2_EN_DeliveryHDS]) and [#1535][bug #1535].
 - [x] [Deprecated] Support bandwidth testing([CN][v1_CN_BandwidthTestTool], [EN][v1_EN_BandwidthTestTool]), please read [#1535][bug #1535].
@@ -191,6 +169,9 @@ Other documents:
 
 ## V4 changes
 
+* v4.0, 2021-04-24, Change push-RTSP as deprecated feature.
+* v4.0, 2021-04-24, Player: Change the default from RTMP to HTTP-FLV.
+* v4.0, 2021-04-24, Disable CherryPy by --cherrypy=off. 4.0.90
 * v4.0, 2021-04-01, RTC: Refine TWCC and SDP exchange. 4.0.88
 * v4.0, 2021-03-24, RTC: Support WebRTC re-publish stream. 4.0.87
 * v4.0, 2021-03-24, RTC: Use fast parse TWCC-ID, ignore in packet parsing. 4.0.86
@@ -268,6 +249,9 @@ Other documents:
 
 ## V3 changes
 
+* <strong>v3.0, 2021-04-24, [3.0 release4(3.0.160)][r3.0r4] released. 122750 lines.</strong>
+* v3.0, 2021-04-24, Package players and console to zip and docker. 3.0.160
+* v3.0, 2021-04-24, Add srs-console to research/console. 3.0.159
 * v3.0, 2021-03-05, Refine usage to docker by default. 3.0.158
 * v3.0, 2021-01-07, Change id from int to string for the statistics. 3.0.157
 * <strong>v3.0, 2021-01-02, [3.0 release3(3.0.156)][r3.0r3] released. 122736 lines.</strong>
@@ -903,6 +887,7 @@ Other documents:
 
 ## Releases
 
+* 2021-04-24, [Release v3.0-r4][r3.0r4], 3.0 release4, 3.0.160, 122750 lines.
 * 2021-01-02, [Release v3.0-r3][r3.0r3], 3.0 release3, 3.0.156, 122736 lines.
 * 2020-10-31, [Release v3.0-r2][r3.0r2], 3.0 release2, 3.0.153, 122663 lines.
 * 2020-10-10, [Release v3.0-r1][r3.0r1], 3.0 release1, 3.0.144, 122674 lines.
@@ -1893,6 +1878,7 @@ Winlin
 
 [exo #828]: https://github.com/google/ExoPlayer/pull/828
 
+[r3.0r4]: https://github.com/ossrs/srs/releases/tag/v3.0-r4
 [r3.0r3]: https://github.com/ossrs/srs/releases/tag/v3.0-r3
 [r3.0r2]: https://github.com/ossrs/srs/releases/tag/v3.0-r2
 [r3.0r1]: https://github.com/ossrs/srs/releases/tag/v3.0-r1
