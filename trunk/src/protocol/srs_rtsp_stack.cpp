@@ -23,8 +23,6 @@
 
 #include <srs_rtsp_stack.hpp>
 
-#if !defined(SRS_EXPORT_LIBRTMP)
-
 #include <stdlib.h>
 #include <map>
 using namespace std;
@@ -120,7 +118,7 @@ std::string srs_generate_rtsp_method_str(SrsRtspMethod method)
     }
 }
 
-SrsRtpPacket::SrsRtpPacket()
+SrsRtspPacket::SrsRtspPacket()
 {
     version = 2;
     padding = 0;
@@ -139,13 +137,13 @@ SrsRtpPacket::SrsRtpPacket()
     completed = false;
 }
 
-SrsRtpPacket::~SrsRtpPacket()
+SrsRtspPacket::~SrsRtspPacket()
 {
     srs_freep(payload);
     srs_freep(audio);
 }
 
-void SrsRtpPacket::copy(SrsRtpPacket* src)
+void SrsRtspPacket::copy(SrsRtspPacket* src)
 {
     version = src->version;
     padding = src->padding;
@@ -164,7 +162,7 @@ void SrsRtpPacket::copy(SrsRtpPacket* src)
     audio = new SrsAudioFrame();
 }
 
-void SrsRtpPacket::reap(SrsRtpPacket* src)
+void SrsRtspPacket::reap(SrsRtspPacket* src)
 {
     copy(src);
     
@@ -177,7 +175,7 @@ void SrsRtpPacket::reap(SrsRtpPacket* src)
     src->audio = NULL;
 }
 
-srs_error_t SrsRtpPacket::decode(SrsBuffer* stream)
+srs_error_t SrsRtspPacket::decode(SrsBuffer* stream)
 {
     srs_error_t err = srs_success;
     
@@ -212,7 +210,7 @@ srs_error_t SrsRtpPacket::decode(SrsBuffer* stream)
     return err;
 }
 
-srs_error_t SrsRtpPacket::decode_97(SrsBuffer* stream)
+srs_error_t SrsRtspPacket::decode_97(SrsBuffer* stream)
 {
     srs_error_t err = srs_success;
     
@@ -264,7 +262,7 @@ srs_error_t SrsRtpPacket::decode_97(SrsBuffer* stream)
     return err;
 }
 
-srs_error_t SrsRtpPacket::decode_96(SrsBuffer* stream)
+srs_error_t SrsRtspPacket::decode_96(SrsBuffer* stream)
 {
     srs_error_t err = srs_success;
     
@@ -1099,6 +1097,4 @@ srs_error_t SrsRtspStack::recv_token(std::string& token, SrsRtspTokenState& stat
     
     return err;
 }
-
-#endif
 

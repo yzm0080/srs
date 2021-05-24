@@ -442,6 +442,10 @@ public:
     // If  true, SRS will run in daemon mode, fork and fork to reap the
     // grand-child process to init process.
     virtual bool get_daemon();
+private:
+    // Whether user use full.conf
+    virtual bool is_full_config();
+public:
     // Get the max connections limit of system.
     // If  exceed the max connection, SRS will disconnect the connection.
     // @remark, linux will limit the connections of each process,
@@ -487,6 +491,15 @@ public:
     virtual bool auto_reload_for_docker();
     // For tcmalloc, get the release rate.
     virtual double tcmalloc_release_rate();
+// Thread pool section.
+public:
+    virtual bool get_circuit_breaker();
+    virtual int get_high_threshold();
+    virtual int get_high_pulse();
+    virtual int get_critical_threshold();
+    virtual int get_critical_pulse();
+    virtual int get_dying_threshold();
+    virtual int get_dying_pulse();
 // stream_caster section
 public:
     // Get all stream_caster in config file.
@@ -533,19 +546,6 @@ public:
     virtual bool get_rtc_server_encrypt();
     virtual int get_rtc_server_reuseport();
     virtual bool get_rtc_server_merge_nalus();
-    virtual bool get_rtc_server_perf_stat();
-private:
-    SrsConfDirective* get_rtc_server_rtp_cache();
-public:
-    virtual bool get_rtc_server_rtp_cache_enabled();
-    virtual uint64_t get_rtc_server_rtp_cache_pkt_size();
-    virtual uint64_t get_rtc_server_rtp_cache_payload_size();
-private:
-    virtual SrsConfDirective* get_rtc_server_rtp_msg_cache();
-public:
-    virtual bool get_rtc_server_rtp_msg_cache_enabled();
-    virtual uint64_t get_rtc_server_rtp_msg_cache_msg_size();
-    virtual uint64_t get_rtc_server_rtp_msg_cache_buffer_size();
 public:
     virtual bool get_rtc_server_black_hole();
     virtual std::string get_rtc_server_black_hole_addr();
@@ -562,6 +562,8 @@ public:
     std::string get_rtc_dtls_role(std::string vhost);
     std::string get_rtc_dtls_version(std::string vhost);
     int get_rtc_drop_for_pt(std::string vhost);
+    bool get_rtc_to_rtmp(std::string vhost);
+    srs_utime_t get_rtc_pli_for_rtmp(std::string vhost);
     bool get_rtc_nack_enabled(std::string vhost);
     bool get_rtc_nack_no_copy(std::string vhost);
     bool get_rtc_twcc_enabled(std::string vhost);

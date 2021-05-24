@@ -33,6 +33,12 @@ using namespace std;
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_app_utility.hpp>
+#include <srs_app_threads.hpp>
+
+#include <srs_protocol_kbps.hpp>
+
+extern SrsPps* _srs_pps_snack3;
+extern SrsPps* _srs_pps_snack4;
 
 SrsRtpRingBuffer::SrsRtpRingBuffer(int capacity)
 {
@@ -41,15 +47,15 @@ SrsRtpRingBuffer::SrsRtpRingBuffer(int capacity)
     capacity_ = (uint16_t)capacity;
     initialized_ = false;
 
-    queue_ = new SrsRtpPacket2*[capacity_];
-    memset(queue_, 0, sizeof(SrsRtpPacket2*) * capacity);
+    queue_ = new SrsRtpPacket*[capacity_];
+    memset(queue_, 0, sizeof(SrsRtpPacket*) * capacity);
 }
 
 SrsRtpRingBuffer::~SrsRtpRingBuffer()
 {
     for (int i = 0; i < capacity_; ++i) {
-        SrsRtpPacket2* pkt = queue_[i];
-        _srs_rtp_cache->recycle(pkt);
+        SrsRtpPacket* pkt = queue_[i];
+        srs_freep(pkt);
     }
     srs_freepa(queue_);
 }
@@ -71,13 +77,10 @@ void SrsRtpRingBuffer::advance_to(uint16_t seq)
     begin = seq;
 }
 
-void SrsRtpRingBuffer::set(uint16_t at, SrsRtpPacket2* pkt)
+void SrsRtpRingBuffer::set(uint16_t at, SrsRtpPacket* pkt)
 {
-    SrsRtpPacket2* p = queue_[at % capacity_];
-
-    if (p) {
-        _srs_rtp_cache->recycle(p);
-    }
+    SrsRtpPacket* p = queue_[at % capacity_];
+    srs_freep(p);
 
     queue_[at % capacity_] = pkt;
 }
@@ -140,7 +143,7 @@ bool SrsRtpRingBuffer::update(uint16_t seq, uint16_t& nack_first, uint16_t& nack
     return true;
 }
 
-SrsRtpPacket2* SrsRtpRingBuffer::at(uint16_t seq) {
+SrsRtpPacket* SrsRtpRingBuffer::at(uint16_t seq) {
     return queue_[seq % capacity_];
 }
 
@@ -162,9 +165,9 @@ void SrsRtpRingBuffer::clear_histroy(uint16_t seq)
 {
     // TODO FIXME Did not consider loopback
     for (uint16_t i = 0; i < capacity_; i++) {
-        SrsRtpPacket2* p = queue_[i];
+        SrsRtpPacket* p = queue_[i];
         if (p && p->header.get_sequence() < seq) {
-            _srs_rtp_cache->recycle(p);
+            srs_freep(p);
             queue_[i] = NULL;
         }
     }
@@ -173,9 +176,9 @@ void SrsRtpRingBuffer::clear_histroy(uint16_t seq)
 void SrsRtpRingBuffer::clear_all_histroy()
 {
     for (uint16_t i = 0; i < capacity_; i++) {
-        SrsRtpPacket2* p = queue_[i];
+        SrsRtpPacket* p = queue_[i];
         if (p) {
-            _srs_rtp_cache->recycle(p);
+            srs_freep(p);
             queue_[i] = NULL;
         }
     }
@@ -228,6 +231,12 @@ SrsRtpNackForReceiver::~SrsRtpNackForReceiver()
 
 void SrsRtpNackForReceiver::insert(uint16_t first, uint16_t last)
 {
+    // If circuit-breaker is enabled, disable nack.
+    if (_srs_circuit_breaker->hybrid_high_water_level()) {
+        ++_srs_pps_snack4->sugar;
+        return;
+    }
+
     for (uint16_t s = first; s != last; ++s) {
         queue_[s] = SrsRtpNackInfo();
     }
@@ -259,6 +268,13 @@ void SrsRtpNackForReceiver::check_queue_size()
 
 void SrsRtpNackForReceiver::get_nack_seqs(SrsRtcpNack& seqs, uint32_t& timeout_nacks)
 {
+    // If circuit-breaker is enabled, disable nack.
+    if (_srs_circuit_breaker->hybrid_high_water_level()) {
+        queue_.clear();
+        ++_srs_pps_snack4->sugar;
+        return;
+    }
+
     srs_utime_t now = srs_get_system_time();
 
     srs_utime_t interval = now - pre_check_time_;

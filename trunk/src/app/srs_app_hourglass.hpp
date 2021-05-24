@@ -30,6 +30,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 class SrsCoroutine;
 
@@ -68,7 +69,7 @@ public:
 //
 //      // The hg will create a thread for timer.
 //      hg->start();
-class SrsHourGlass : virtual public ISrsCoroutineHandler
+class SrsHourGlass : public ISrsCoroutineHandler
 {
 private:
     std::string label_;
@@ -96,10 +97,58 @@ public:
     // @param interval the interval in srs_utime_t of tick.
     virtual srs_error_t tick(srs_utime_t interval);
     virtual srs_error_t tick(int event, srs_utime_t interval);
+    // Remove the tick by event.
+    void untick(int event);
 public:
     // Cycle the hourglass, which will sleep resolution every time.
     // and call handler when ticked.
     virtual srs_error_t cycle();
+};
+
+// The handler for fast timer.
+class ISrsFastTimer
+{
+public:
+    ISrsFastTimer();
+    virtual ~ISrsFastTimer();
+public:
+    // Tick when timer is active.
+    virtual srs_error_t on_timer(srs_utime_t interval) = 0;
+};
+
+// The fast timer, shared by objects, for high performance.
+// For example, we should never start a timer for each connection or publisher or player,
+// instead, we should start only one fast timer in server.
+class SrsFastTimer : public ISrsCoroutineHandler
+{
+private:
+    SrsCoroutine* trd_;
+    srs_utime_t interval_;
+    std::vector<ISrsFastTimer*> handlers_;
+public:
+    SrsFastTimer(std::string label, srs_utime_t interval);
+    virtual ~SrsFastTimer();
+public:
+    srs_error_t start();
+public:
+    void subscribe(ISrsFastTimer* timer);
+    void unsubscribe(ISrsFastTimer* timer);
+// Interface ISrsCoroutineHandler
+private:
+    // Cycle the hourglass, which will sleep resolution every time.
+    // and call handler when ticked.
+    virtual srs_error_t cycle();
+};
+
+// To monitor the system wall clock timer deviation.
+class SrsClockWallMonitor : public ISrsFastTimer
+{
+public:
+    SrsClockWallMonitor();
+    virtual ~SrsClockWallMonitor();
+// interface ISrsFastTimer
+private:
+    srs_error_t on_timer(srs_utime_t interval);
 };
 
 #endif
